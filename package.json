@@ -1,0 +1,38 @@
+{
+  "name": "claude-gladiator-mcp",
+  "version": "0.1.0",
+  "description": "Continuous learning MCP server for Claude Code — observes, reflects, writes skills",
+  "type": "module",
+  "bin": {
+    "claude-gladiator-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "learning",
+    "skills",
+    "continuous-learning"
+  ],
+  "author": "Vvkmnn",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vvkmnn/claude-gladiator-mcp.git"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  }
+}

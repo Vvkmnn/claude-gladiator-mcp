@@ -1,24 +1,5 @@
-# Dependencies
 node_modules/
-package-lock.json
-
-# Build output
 dist/
-
-# Logs
-*.log
-npm-debug.log*
-
-# OS
+*.tgz
 .DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Test data
-.claude/
-!.claude/skills/
+.mcp.json

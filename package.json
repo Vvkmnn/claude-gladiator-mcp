@@ -1,7 +1,7 @@
 {
   "name": "claude-gladiator-mcp",
   "version": "0.1.0",
-  "description": "Continuous learning MCP server for Claude Code — observes, reflects, writes skills",
+  "description": "Continuous learning MCP server for Claude Code — observe patterns, reflect on them, evolve your workflow",
   "type": "module",
   "bin": {
     "claude-gladiator-mcp": "dist/index.js"
@@ -11,15 +11,23 @@
   ],
   "scripts": {
     "build": "tsc",
-    "watch": "tsc --watch",
-    "prepare": "npm run build"
+    "dev": "tsc --watch",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
     "claude",
+    "claude-code",
     "learning",
-    "skills",
-    "continuous-learning"
+    "continuous-learning",
+    "observation",
+    "pattern-recognition"
   ],
   "author": "Vvkmnn",
   "license": "MIT",
@@ -27,12 +35,23 @@
     "type": "git",
     "url": "git+https://github.com/Vvkmnn/claude-gladiator-mcp.git"
   },
+  "homepage": "https://github.com/Vvkmnn/claude-gladiator-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/Vvkmnn/claude-gladiator-mcp/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@modelcontextprotocol/sdk": "^1.5.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^20.10.0",
-    "typescript": "^5.3.0"
+    "eslint": "^10.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "^5.3.0",
+    "typescript-eslint": "^8.56.0"
   }
 }

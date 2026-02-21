@@ -2,7 +2,7 @@
 
 # claude-gladiator-mcp
 
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that helps [Claude Code](https://docs.anthropic.com/en/docs/claude-code) learn from its own mistakes. Observe patterns during work, then reflect to get recommendations for updating your rules, hooks, and skills.
+An [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that helps [Claude Code](https://docs.anthropic.com/en/docs/claude-code) learn from its own mistakes. Observe patterns during work, then reflect to get recommendations for updating your rules, hooks, and skills.
 
 <br clear="right">
 
@@ -48,19 +48,26 @@ Install this mcp: https://github.com/Vvkmnn/claude-gladiator-mcp
 }
 ```
 
-There is **no `npm install` required** — no external dependencies or local databases, only clustering algorithms.
+There is **no `npm install` required** -- no external dependencies or local databases, only clustering algorithms.
 
-## skill
+However, if `npx` resolves the wrong package, you can force resolution with:
+
+```bash
+npm install -g claude-gladiator-mcp
+```
+
+## [skill](.claude/skills/claude-gladiator)
 
 Optionally, install the skill to teach Claude when to proactively observe and reflect:
 
 ```bash
 npx skills add Vvkmnn/claude-gladiator-mcp --skill claude-gladiator --global
+# Optional: add --yes to skip interactive prompt and install to all agents
 ```
 
 This makes Claude automatically observe tool failures, user corrections, and codebase patterns. The MCP works without the skill, but the skill improves discoverability.
 
-## plugin
+## [plugin](https://github.com/Vvkmnn/claude-emporium)
 
 For automatic observation hooks and session-end reflection prompts, install from the [claude-emporium](https://github.com/Vvkmnn/claude-emporium) marketplace:
 
@@ -84,18 +91,18 @@ Requires the MCP server installed first. See the emporium for other Claude Code 
 
 #### `gladiator_observe`
 
-Record a pattern worth learning from — tool failures, corrections, conventions, decisions. Deduplicates by SHA-256 hash of summary.
+Record a pattern worth learning from -- tool failures, corrections, conventions, decisions. Deduplicates by SHA-256 hash of summary.
 
 ```
 gladiator_observe summary=<summary> tags=<tags> context=<context>
-  > "Edit failed on config.ts — 3 identical import blocks, fixed by including surrounding context"
-  > "User wanted tests in __tests__/ not next to source — project convention"
-  > "All API routes use zod validation middleware — schema in routes/schemas/"
+  > "Edit failed on config.ts -- 3 identical import blocks, fixed by including surrounding context"
+  > "User wanted tests in __tests__/ not next to source -- project convention"
+  > "All API routes use zod validation middleware -- schema in routes/schemas/"
 ```
 
 ```
 ┌─ ⚔ ───────────────────────────────────────────────────── Recorded ─┐
-│ Edit failed on config.ts — 3 identical import blocks               │
+│ Edit failed on config.ts -- 3 identical import blocks              │
 │ Recommend (rule): Next time: included 3 lines above                │
 │ Tags: edit, disambiguation                                         │
 │ Backlog: 3 unprocessed of 12 total                                 │
@@ -106,7 +113,7 @@ gladiator_observe summary=<summary> tags=<tags> context=<context>
 {
   "id": "obs_1738012345_a7f3",
   "ts": "2025-01-27T18:32:25.000Z",
-  "summary": "Edit failed on config.ts — 3 identical import blocks",
+  "summary": "Edit failed on config.ts -- 3 identical import blocks",
   "recommendation": "Next time: included 3 lines above",
   "artifact_type": "rule",
   "context": {
@@ -126,7 +133,7 @@ Cluster unprocessed observations, scan existing `~/.claude/rules/`, `~/.claude/h
 
 ```
 gladiator_reflect
-  > "I've accumulated 5 observations about edit failures — what patterns emerge?"
+  > "I've accumulated 5 observations about edit failures -- what patterns emerge?"
   > "Review what I've learned this session before it's lost"
 
 gladiator_reflect query="testing"
@@ -196,11 +203,11 @@ gladiator_reflect query="testing"
 
 ```
 ┌─ ⚔ ──────────────────────────────────────────────────────── Found ─┐
-│ "edit" — 4 observations                                            │
-│   Edit failed on config.ts — 3 identical import (2h ago)           │
+│ "edit" -- 4 observations                                           │
+│   Edit failed on config.ts -- 3 identical import (2h ago)          │
 │   Edit old_string matched wrong function in uti (1d ago)           │
 │   Edit succeeded after adding file_path context (3d ago)           │
-│   Edit conflict on package.json — concurrent wr (5d ago)           │
+│   Edit conflict on package.json -- concurrent wr (5d ago)          │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -248,12 +255,18 @@ gladiator_reflect(query?, limit?)
 - **[Content-based dedup](https://en.wikipedia.org/wiki/Data_deduplication)** ([`hashSummary`](https://github.com/Vvkmnn/claude-gladiator-mcp/blob/main/src/index.ts#L130)): SHA-256 prefix (8 hex chars) of lowercased summary, checked against last 100 observations
 - **[Auto-classification](https://en.wikipedia.org/wiki/Text_classification)** ([`classifyArtifact`](https://github.com/Vvkmnn/claude-gladiator-mcp/blob/main/src/index.ts#L144)): Keyword regex on tags for hook/agent, context heuristic for skill, default rule
 
+**Design principles:**
+
+- **Two-phase learning** -- observe first, reflect later; never modify artifacts in real-time
+- **Update over create** -- prefers updating existing rules/hooks/skills over creating new ones
+- **Append-only storage** -- JSONL format, each observation self-contained, never mutated
+- **Zero dependencies** -- only `@modelcontextprotocol/sdk`, `zod`
+- **Offline** -- never leaves your machine, no network calls
+
 **File access:**
 
 - Reads/writes: `~/.claude/gladiator/observations.jsonl` (JSONL, each line is a self-contained JSON object with timestamp, summary, tags, context, and processing state)
 - Scans (read-only): `~/.claude/rules/`, `~/.claude/hooks/`, `~/.claude/skills/`
-- Zero external dependencies
-- Never leaves your machine
 
 ## development
 
@@ -267,7 +280,7 @@ npm test
 
 - **Node.js**: >=20.0.0 (ES modules)
 - **Runtime**: `@modelcontextprotocol/sdk`, `zod`
-- **Zero external databases** — works with `npx`
+- **Zero external databases** -- works with `npx`
 
 **Development workflow:**
 
@@ -305,6 +318,10 @@ Learn from examples:
 
 <hr>
 
-<a href="https://en.wikipedia.org/wiki/Pollice_Verso_(G%C3%A9r%C3%B4me)"><img src="logo/pollice-verso.jpg" alt="Pollice Verso — Jean-Léon Gérôme" width="100%"></a>
+<a href="https://en.wikipedia.org/wiki/Pollice_Verso_(G%C3%A9r%C3%B4me)"><img src="logo/pollice-verso.jpg" alt="Pollice Verso -- Jean-Léon Gérôme" width="100%"></a>
+
+<p align="center">
 
 _**[Pollice Verso](https://en.wikipedia.org/wiki/Pollice_Verso_(G%C3%A9r%C3%B4me))** by **[Jean-Léon Gérôme](https://en.wikipedia.org/wiki/Jean-L%C3%A9on_G%C3%A9r%C3%B4me)** (1872). "Ave Imperator, morituri te salutant." [Claudius](https://en.wikipedia.org/wiki/Claudius) replied "Aut non" (or not)._
+
+</p>

@@ -3,31 +3,43 @@
   "version": "0.1.0",
   "description": "Continuous learning MCP server for Claude Code — observe patterns, reflect on them, evolve your workflow",
   "type": "module",
+  "main": "./dist/index.js",
   "bin": {
-    "claude-gladiator-mcp": "dist/index.js"
+    "claude-gladiator-mcp": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist/",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod +x dist/index.js",
     "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist",
-    "prepublishOnly": "npm run build"
+    "test": "npm run typecheck && npm run lint",
+    "prepublishOnly": "npm run build && npm run lint && npm run format:check",
+    "prepare": "husky || true"
   },
   "keywords": [
-    "mcp",
     "claude",
     "claude-code",
+    "mcp",
+    "mcp-server",
     "learning",
     "continuous-learning",
     "observation",
-    "pattern-recognition"
+    "pattern-recognition",
+    "npx",
+    "zero-install",
+    "anthropic",
+    "llm",
+    "developer-tools"
   ],
   "author": "Vvkmnn",
   "license": "MIT",
@@ -39,8 +51,16 @@
   "bugs": {
     "url": "https://github.com/Vvkmnn/claude-gladiator-mcp/issues"
   },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/Vvkmnn"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.5.0",
@@ -48,10 +68,18 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^20.10.0",
+    "@types/node": "^22.0.0",
     "eslint": "^10.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
     "typescript": "^5.3.0",
     "typescript-eslint": "^8.56.0"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   }
 }

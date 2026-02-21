@@ -5,17 +5,17 @@
  * used across the MCP server.
  */
 
-import { z } from "zod";
+import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 /** Artifact types that gladiator can recommend creating or updating. */
-export const ARTIFACT_TYPES = ["skill", "rule", "hook", "agent"] as const;
+export const ARTIFACT_TYPES = ['skill', 'rule', 'hook', 'agent'] as const;
 
 /** Sources an observation can originate from. */
-export const OBSERVATION_SOURCES = ["manual", "hook", "conversation", "session"] as const;
+export const OBSERVATION_SOURCES = ['manual', 'hook', 'conversation', 'session'] as const;
 
 export type ArtifactType = (typeof ARTIFACT_TYPES)[number];
 export type ObservationSource = (typeof OBSERVATION_SOURCES)[number];
@@ -45,9 +45,9 @@ export const ObservationSchema = z.object({
   summary: z.string().min(20),
   context: ContextSchema.optional(),
   tags: z.array(z.string()),
-  recommendation: z.string().default(""),
-  artifact_type: z.enum(ARTIFACT_TYPES).default("rule"),
-  source: z.enum(OBSERVATION_SOURCES).default("manual"),
+  recommendation: z.string().default(''),
+  artifact_type: z.enum(ARTIFACT_TYPES).default('rule'),
+  source: z.enum(OBSERVATION_SOURCES).default('manual'),
   session_ref: z.string().optional(),
   processed: z.boolean(),
 });
@@ -99,7 +99,7 @@ export interface ObservationGroup {
 
 /** An existing rule, hook, or skill discovered on disk. */
 export interface ExistingArtifact {
-  readonly type: "rule" | "hook" | "skill";
+  readonly type: 'rule' | 'hook' | 'skill';
   readonly name: string;
   readonly path: string;
   readonly keywords: string[];

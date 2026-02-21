@@ -13,11 +13,11 @@
  *   gladiator_reflect — Query, cluster, and get recommendations
  */
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { createHash } from "crypto";
-import { createRequire } from "module";
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { createHash } from 'crypto';
+import { createRequire } from 'module';
 import {
   appendFileSync,
   existsSync,
@@ -25,9 +25,9 @@ import {
   readFileSync,
   readdirSync,
   writeFileSync,
-} from "fs";
-import { homedir } from "os";
-import { join } from "path";
+} from 'fs';
+import { homedir } from 'os';
+import { join } from 'path';
 
 import {
   ObserveInputSchema,
@@ -40,15 +40,15 @@ import {
   type ObservationGroup,
   type ObserveInput,
   type ReflectInput,
-} from "./types.js";
+} from './types.js';
 
 // ---------------------------------------------------------------------------
 // Paths
 // ---------------------------------------------------------------------------
 
-const CLAUDE_DIR = join(homedir(), ".claude");
-const BASE_DIR = join(CLAUDE_DIR, "gladiator");
-const OBS_FILE = join(BASE_DIR, "observations.jsonl");
+const CLAUDE_DIR = join(homedir(), '.claude');
+const BASE_DIR = join(CLAUDE_DIR, 'gladiator');
+const OBS_FILE = join(BASE_DIR, 'observations.jsonl');
 
 // ---------------------------------------------------------------------------
 // Storage
@@ -61,7 +61,7 @@ function ensureDir(): void {
 /** Append a single observation to the JSONL store. */
 function appendObservation(obs: Observation): void {
   ensureDir();
-  appendFileSync(OBS_FILE, JSON.stringify(obs) + "\n");
+  appendFileSync(OBS_FILE, JSON.stringify(obs) + '\n');
 }
 
 /**
@@ -73,16 +73,16 @@ function appendObservation(obs: Observation): void {
 function readObservations(filter?: ObservationFilter): Observation[] {
   if (!existsSync(OBS_FILE)) return [];
 
-  const lines = readFileSync(OBS_FILE, "utf-8").split("\n").filter(Boolean);
+  const lines = readFileSync(OBS_FILE, 'utf-8').split('\n').filter(Boolean);
   let obs: Observation[] = [];
 
   for (const line of lines) {
     try {
       const raw = JSON.parse(line) as Record<string, unknown>;
       obs.push({
-        recommendation: "",
-        artifact_type: "rule",
-        source: "manual",
+        recommendation: '',
+        artifact_type: 'rule',
+        source: 'manual',
         ...raw,
       } as Observation);
     } catch {
@@ -105,7 +105,7 @@ function markProcessed(ids: string[]): void {
   if (!existsSync(OBS_FILE)) return;
 
   const idSet = new Set(ids);
-  const lines = readFileSync(OBS_FILE, "utf-8").split("\n").filter(Boolean);
+  const lines = readFileSync(OBS_FILE, 'utf-8').split('\n').filter(Boolean);
   const updated = lines.map((line) => {
     try {
       const obs = JSON.parse(line) as Observation;
@@ -119,7 +119,7 @@ function markProcessed(ids: string[]): void {
     return line;
   });
 
-  writeFileSync(OBS_FILE, updated.join("\n") + "\n");
+  writeFileSync(OBS_FILE, updated.join('\n') + '\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +128,7 @@ function markProcessed(ids: string[]): void {
 
 /** SHA-256 prefix hash of a lowercased, trimmed summary. */
 function hashSummary(summary: string): string {
-  return createHash("sha256").update(summary.toLowerCase().trim()).digest("hex").slice(0, 8);
+  return createHash('sha256').update(summary.toLowerCase().trim()).digest('hex').slice(0, 8);
 }
 
 /** Collect hashes of the most recent `count` observations. */
@@ -141,16 +141,16 @@ function recentHashes(count: number): Set<string> {
 // ---------------------------------------------------------------------------
 
 /** Auto-classify an observation's artifact type from its tags and context. */
-function classifyArtifact(tags: string[], context?: ObserveInput["context"]): ArtifactType {
-  const tagStr = tags.join(" ").toLowerCase();
-  if (/\b(automat|hook|pre-tool|post-tool|trigger)\b/.test(tagStr)) return "hook";
-  if (/\b(agent|subagent|review|audit)\b/.test(tagStr)) return "agent";
-  if (context?.before && context.after) return "skill";
-  return "rule";
+function classifyArtifact(tags: string[], context?: ObserveInput['context']): ArtifactType {
+  const tagStr = tags.join(' ').toLowerCase();
+  if (/\b(automat|hook|pre-tool|post-tool|trigger)\b/.test(tagStr)) return 'hook';
+  if (/\b(agent|subagent|review|audit)\b/.test(tagStr)) return 'agent';
+  if (context?.before && context.after) return 'skill';
+  return 'rule';
 }
 
 /** Generate a default recommendation when none is provided. */
-function defaultRecommendation(summary: string, context?: ObserveInput["context"]): string {
+function defaultRecommendation(summary: string, context?: ObserveInput['context']): string {
   if (context?.after) return `Next time: ${context.after}`;
   if (context?.error) return `Avoid: ${context.error}`;
   return `Address: ${summary}`;
@@ -164,7 +164,7 @@ function defaultRecommendation(summary: string, context?: ObserveInput["context"
 function extractKeywords(content: string): string[] {
   const words = content
     .toLowerCase()
-    .replace(/[^a-z0-9\s_-]/g, " ")
+    .replace(/[^a-z0-9\s_-]/g, ' ')
     .split(/\s+/)
     .filter((w) => w.length > 3);
   return [...new Set(words)];
@@ -182,7 +182,7 @@ function discoverExistingArtifacts(): ExistingArtifact[] {
 
   const scanDir = (
     dir: string,
-    type: ExistingArtifact["type"],
+    type: ExistingArtifact['type'],
     filter: (f: string) => boolean,
     getPath: (f: string) => string,
   ): void => {
@@ -191,8 +191,8 @@ function discoverExistingArtifacts(): ExistingArtifact[] {
       for (const file of readdirSync(dir).filter(filter)) {
         const path = getPath(file);
         if (!existsSync(path)) continue;
-        const name = file.replace(/\.[^.]+$/, "");
-        const content = readFileSync(path, "utf-8");
+        const name = file.replace(/\.[^.]+$/, '');
+        const content = readFileSync(path, 'utf-8');
         artifacts.push({ type, name, path, keywords: extractKeywords(content) });
       }
     } catch {
@@ -202,30 +202,30 @@ function discoverExistingArtifacts(): ExistingArtifact[] {
 
   // Rules: ~/.claude/rules/*.md
   scanDir(
-    join(CLAUDE_DIR, "rules"),
-    "rule",
-    (f) => f.endsWith(".md"),
-    (f) => join(CLAUDE_DIR, "rules", f),
+    join(CLAUDE_DIR, 'rules'),
+    'rule',
+    (f) => f.endsWith('.md'),
+    (f) => join(CLAUDE_DIR, 'rules', f),
   );
 
   // Hooks: ~/.claude/hooks/*
   scanDir(
-    join(CLAUDE_DIR, "hooks"),
-    "hook",
-    (f) => !f.startsWith("."),
-    (f) => join(CLAUDE_DIR, "hooks", f),
+    join(CLAUDE_DIR, 'hooks'),
+    'hook',
+    (f) => !f.startsWith('.'),
+    (f) => join(CLAUDE_DIR, 'hooks', f),
   );
 
   // Skills: ~/.claude/skills/*/SKILL.md
-  const skillsDir = join(CLAUDE_DIR, "skills");
+  const skillsDir = join(CLAUDE_DIR, 'skills');
   if (existsSync(skillsDir)) {
     try {
       for (const dir of readdirSync(skillsDir)) {
-        const skillFile = join(skillsDir, dir, "SKILL.md");
+        const skillFile = join(skillsDir, dir, 'SKILL.md');
         if (existsSync(skillFile)) {
-          const content = readFileSync(skillFile, "utf-8");
+          const content = readFileSync(skillFile, 'utf-8');
           artifacts.push({
-            type: "skill",
+            type: 'skill',
             name: dir,
             path: skillFile,
             keywords: extractKeywords(content),
@@ -345,11 +345,11 @@ function clusterObservations(obs: Observation[]): ObservationGroup[] {
   const groups = new Map<string, Observation[]>();
 
   for (const o of obs) {
-    const key = o.tags.length > 0 ? o.tags.sort().join(",") : `untagged-${o.id}`;
+    const key = o.tags.length > 0 ? o.tags.sort().join(',') : `untagged-${o.id}`;
     let merged = false;
 
     for (const [groupKey, groupObs] of groups) {
-      const groupTags = new Set(groupKey.split(","));
+      const groupTags = new Set(groupKey.split(','));
       const obsTags = new Set(o.tags);
       const intersection = [...obsTags].filter((t) => groupTags.has(t));
       const union = new Set([...obsTags, ...groupTags]);
@@ -377,8 +377,8 @@ function clusterObservations(obs: Observation[]): ObservationGroup[] {
     const slug =
       allTags
         .slice(0, 2)
-        .join("-")
-        .replace(/[^a-z0-9-]/gi, "")
+        .join('-')
+        .replace(/[^a-z0-9-]/gi, '')
         .slice(0, 25) || `unnamed-${firstObs.id.slice(-4)}`;
 
     // Majority vote for artifact_type
@@ -386,7 +386,7 @@ function clusterObservations(obs: Observation[]): ObservationGroup[] {
     for (const o of groupObs) {
       typeCounts.set(o.artifact_type, (typeCounts.get(o.artifact_type) ?? 0) + 1);
     }
-    let majorityType: ArtifactType = "rule";
+    let majorityType: ArtifactType = 'rule';
     let maxCount = 0;
     for (const [type, count] of typeCounts) {
       if (count > maxCount) {
@@ -412,28 +412,28 @@ function clusterObservations(obs: Observation[]): ObservationGroup[] {
 
 /** Render content lines inside a bordered box with a status label. */
 function formatBox(content: string[], status: string, width = 70): string {
-  const topLeft = "┌─ ⚔ ";
+  const topLeft = '┌─ ⚔ ';
   const topRight = ` ${status} ─┐`;
   const dashCount = width - topLeft.length - topRight.length;
-  const topBorder = topLeft + "─".repeat(Math.max(0, dashCount)) + topRight;
-  const bottomBorder = "└" + "─".repeat(width - 2) + "┘";
+  const topBorder = topLeft + '─'.repeat(Math.max(0, dashCount)) + topRight;
+  const bottomBorder = '└' + '─'.repeat(width - 2) + '┘';
   const maxContent = width - 4;
 
   const lines = [topBorder];
   for (const line of content) {
-    const truncated = line.length > maxContent ? line.slice(0, maxContent - 1) + "…" : line;
+    const truncated = line.length > maxContent ? line.slice(0, maxContent - 1) + '…' : line;
     lines.push(`│ ${truncated.padEnd(maxContent)} │`);
   }
   lines.push(bottomBorder);
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /** Human-readable relative timestamp (e.g. "3h ago", "2d ago"). */
 function formatAge(ts: string): string {
   const ms = Date.now() - new Date(ts).getTime();
   const mins = Math.floor(ms / 60000);
-  if (mins < 1) return "just now";
+  if (mins < 1) return 'just now';
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
@@ -447,69 +447,69 @@ function formatAge(ts: string): string {
 // ---------------------------------------------------------------------------
 
 const observeToolDef = {
-  name: "gladiator_observe",
+  name: 'gladiator_observe',
   description:
-    "Record a pattern worth learning from, with optional recommendation and artifact type. Deduplicates by summary hash.",
+    'Record a pattern worth learning from, with optional recommendation and artifact type. Deduplicates by summary hash.',
   inputSchema: {
-    type: "object" as const,
+    type: 'object' as const,
     properties: {
       summary: {
-        type: "string",
-        description: "1-2 sentence description of what happened (min 20 chars)",
+        type: 'string',
+        description: '1-2 sentence description of what happened (min 20 chars)',
       },
       context: {
-        type: "object",
-        description: "Optional structured context",
+        type: 'object',
+        description: 'Optional structured context',
         properties: {
-          tool: { type: "string", description: "Tool that triggered this" },
-          before: { type: "string", description: "What was tried first" },
-          after: { type: "string", description: "What actually worked" },
-          error: { type: "string", description: "Exact error message if any" },
+          tool: { type: 'string', description: 'Tool that triggered this' },
+          before: { type: 'string', description: 'What was tried first' },
+          after: { type: 'string', description: 'What actually worked' },
+          error: { type: 'string', description: 'Exact error message if any' },
         },
       },
       tags: {
-        type: "array",
-        items: { type: "string" },
-        description: "Freeform tags for clustering",
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Freeform tags for clustering',
       },
       recommendation: {
-        type: "string",
-        description: "What to do about this pattern (auto-generated if omitted)",
+        type: 'string',
+        description: 'What to do about this pattern (auto-generated if omitted)',
       },
       artifact_type: {
-        type: "string",
-        enum: ["skill", "rule", "hook", "agent"],
-        description: "Suggested artifact type (auto-classified if omitted)",
+        type: 'string',
+        enum: ['skill', 'rule', 'hook', 'agent'],
+        description: 'Suggested artifact type (auto-classified if omitted)',
       },
       source: {
-        type: "string",
-        enum: ["manual", "hook", "conversation", "session"],
-        description: "Where this observation came from (default: manual)",
+        type: 'string',
+        enum: ['manual', 'hook', 'conversation', 'session'],
+        description: 'Where this observation came from (default: manual)',
       },
       session_ref: {
-        type: "string",
+        type: 'string',
         description:
-          "Session file reference when observing from conversation history (e.g., project-dir/session-id)",
+          'Session file reference when observing from conversation history (e.g., project-dir/session-id)',
       },
     },
-    required: ["summary"],
+    required: ['summary'],
   },
 };
 
 const reflectToolDef = {
-  name: "gladiator_reflect",
+  name: 'gladiator_reflect',
   description:
-    "Query and cluster observations. No args = stats overview. With query = filtered search. Unprocessed observations are clustered by tag overlap with recommendations.",
+    'Query and cluster observations. No args = stats overview. With query = filtered search. Unprocessed observations are clustered by tag overlap with recommendations.',
   inputSchema: {
-    type: "object" as const,
+    type: 'object' as const,
     properties: {
       query: {
-        type: "string",
-        description: "Keyword to filter observations by summary, tags, or recommendation",
+        type: 'string',
+        description: 'Keyword to filter observations by summary, tags, or recommendation',
       },
       limit: {
-        type: "number",
-        description: "Max observations to analyze (default 50)",
+        type: 'number',
+        description: 'Max observations to analyze (default 50)',
       },
     },
   },
@@ -522,24 +522,24 @@ const reflectToolDef = {
 function handleObserve(input: ObserveInput): string {
   // Quality gate: corrections need both before and after
   if (input.context?.before && !input.context.after) {
-    return formatBox(["Corrections need both 'before' and 'after' context."], "Skipped");
+    return formatBox(["Corrections need both 'before' and 'after' context."], 'Skipped');
   }
 
   // Dedup check against recent observations
   const hash = hashSummary(input.summary);
   if (recentHashes(100).has(hash)) {
-    return formatBox([`Duplicate observation (hash: ${hash})`], "Skipped");
+    return formatBox([`Duplicate observation (hash: ${hash})`], 'Skipped');
   }
 
   const artifact_type = input.artifact_type ?? classifyArtifact(input.tags, input.context);
   const recommendation =
     input.recommendation ?? defaultRecommendation(input.summary, input.context);
-  const source = input.source ?? "manual";
+  const source = input.source ?? 'manual';
 
   const obs: Observation = {
     id: `obs_${Date.now()}_${Math.random().toString(16).slice(2, 6)}`,
     ts: new Date().toISOString(),
-    session: process.env.CLAUDE_SESSION_ID ?? "unknown",
+    session: process.env.CLAUDE_SESSION_ID ?? 'unknown',
     summary: input.summary,
     context: input.context,
     tags: input.tags,
@@ -553,13 +553,13 @@ function handleObserve(input: ObserveInput): string {
   appendObservation(obs);
 
   const content = [obs.summary, `Recommend (${artifact_type}): ${recommendation.slice(0, 55)}`];
-  if (obs.tags.length > 0) content.push(`Tags: ${obs.tags.join(", ")}`);
+  if (obs.tags.length > 0) content.push(`Tags: ${obs.tags.join(', ')}`);
 
   const allObs = readObservations();
   const unprocessed = allObs.filter((o) => !o.processed).length;
   content.push(`Backlog: ${unprocessed} unprocessed of ${allObs.length} total`);
 
-  return formatBox(content, "Recorded");
+  return formatBox(content, 'Recorded');
 }
 
 function handleReflect(input: ReflectInput): string {
@@ -611,7 +611,7 @@ function handleReflectQuery(
     .slice(-limit);
 
   const content = [
-    `"${input.query}" — ${matching.length} observation${matching.length !== 1 ? "s" : ""}`,
+    `"${input.query}" — ${matching.length} observation${matching.length !== 1 ? 's' : ''}`,
   ];
   for (const o of matching.slice(-5)) {
     content.push(`  ${o.summary.slice(0, 50)} (${formatAge(o.ts)})`);
@@ -620,7 +620,7 @@ function handleReflectQuery(
     content.push(`  ... +${matching.length - 5} more`);
   }
 
-  return `${formatBox(content, "Found")}\n\n${JSON.stringify(
+  return `${formatBox(content, 'Found')}\n\n${JSON.stringify(
     {
       query: input.query,
       matching_observations: matching.length,
@@ -638,7 +638,7 @@ function handleReflectStats(allObs: Observation[], byType: Map<string, number>):
     content.push(`  ${type}: ${count}`);
   }
 
-  return `${formatBox(content, "Stats")}\n\n${JSON.stringify(
+  return `${formatBox(content, 'Stats')}\n\n${JSON.stringify(
     {
       total_observations: allObs.length,
       unprocessed: 0,
@@ -675,9 +675,9 @@ function handleReflectCluster(
 
   // Box output
   const content = [
-    `${limited.length} observations → ${groups.length} group${groups.length !== 1 ? "s" : ""}`,
+    `${limited.length} observations → ${groups.length} group${groups.length !== 1 ? 's' : ''}`,
     `${existing.length} existing artifacts scanned (IDF-weighted)`,
-    "",
+    '',
   ];
 
   for (const g of annotatedGroups) {
@@ -693,7 +693,7 @@ function handleReflectCluster(
     }
   }
 
-  return `${formatBox(content, "Reflected")}\n\n${JSON.stringify(
+  return `${formatBox(content, 'Reflected')}\n\n${JSON.stringify(
     {
       observations_analyzed: limited.length,
       groups_found: groups.length,
@@ -703,7 +703,7 @@ function handleReflectCluster(
         suggested_name: g.suggested_name,
         artifact_type: g.artifact_type,
         tags: g.tags,
-        action: g.overlapping_artifacts.length > 0 ? "update" : "create",
+        action: g.overlapping_artifacts.length > 0 ? 'update' : 'create',
         update_targets: g.overlapping_artifacts.map((a) => ({
           type: a.type,
           name: a.name,
@@ -712,11 +712,11 @@ function handleReflectCluster(
         observations: g.observations.map(summarizeObservation),
       })),
       actions: [
-        "PREFER updating existing artifacts over creating new ones",
-        "Consolidate related observations into a single change when possible",
-        "Only create new artifacts when no existing one covers the topic",
-        "Generalize recommendations — avoid one-off rules for single incidents",
-        "The user decides what to act on — gladiator only recommends",
+        'PREFER updating existing artifacts over creating new ones',
+        'Consolidate related observations into a single change when possible',
+        'Only create new artifacts when no existing one covers the topic',
+        'Generalize recommendations — avoid one-off rules for single incidents',
+        'The user decides what to act on — gladiator only recommends',
       ],
     },
     null,
@@ -743,7 +743,7 @@ function summarizeObservation(o: Observation): Record<string, unknown> {
 // ---------------------------------------------------------------------------
 
 const require = createRequire(import.meta.url);
-const { version: SERVER_VERSION } = require("../package.json") as { version: string };
+const { version: SERVER_VERSION } = require('../package.json') as { version: string };
 
 const SERVER_INSTRUCTIONS = `⚔️ Gladiator — Continuous Learning
 
@@ -767,7 +767,7 @@ IMPORTANT — Consolidation over creation:
 When reflecting, gladiator scans existing rules (~/.claude/rules/), hooks (~/.claude/hooks/), and skills (~/.claude/skills/) and recommends UPDATING existing artifacts when observations overlap with what's already there. Only recommend creating new artifacts when no existing one covers the topic. Generalize — a single rule update covering 5 observations is better than 5 new files.`;
 
 const server = new Server(
-  { name: "claude-gladiator-mcp", version: SERVER_VERSION },
+  { name: 'claude-gladiator-mcp', version: SERVER_VERSION },
   { capabilities: { tools: {} }, instructions: SERVER_INSTRUCTIONS },
 );
 
@@ -781,18 +781,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     let result: string;
 
-    if (name === "gladiator_observe") {
+    if (name === 'gladiator_observe') {
       result = handleObserve(ObserveInputSchema.parse(args));
-    } else if (name === "gladiator_reflect") {
+    } else if (name === 'gladiator_reflect') {
       result = handleReflect(ReflectInputSchema.parse(args));
     } else {
       throw new Error(`Unknown tool: ${name}`);
     }
 
-    return { content: [{ type: "text", text: result }] };
+    return { content: [{ type: 'text', text: result }] };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    return { content: [{ type: "text", text: `Error: ${msg}` }], isError: true };
+    return { content: [{ type: 'text', text: `Error: ${msg}` }], isError: true };
   }
 });
 
@@ -807,6 +807,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  console.error("Fatal error:", error);
+  console.error('Fatal error:', error);
   process.exit(1);
 });

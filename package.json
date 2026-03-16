@@ -1,14 +1,19 @@
 {
   "name": "claude-gladiator-mcp",
-  "version": "0.1.0",
-  "description": "Continuous learning MCP server for Claude Code — observe patterns, reflect on them, evolve your workflow",
+  "version": "0.1.1",
+  "description": "An MCP server for continuous learning in Claude Code",
   "type": "module",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "bin": {
     "claude-gladiator-mcp": "./dist/index.js"
   },
   "files": [
     "dist/",
+    ".claude/skills/",
     "README.md",
     "LICENSE"
   ],
@@ -31,15 +36,25 @@
     "claude-code",
     "mcp",
     "mcp-server",
+    "model-context-protocol",
+    "anthropic",
+    "llm",
+    "ai",
+    "ai-tools",
+    "ai-agent",
     "learning",
     "continuous-learning",
     "observation",
     "pattern-recognition",
+    "workflow",
+    "self-improvement",
+    "reflection",
     "npx",
     "zero-install",
-    "anthropic",
-    "llm",
-    "developer-tools"
+    "cli",
+    "developer-tools",
+    "typescript",
+    "nodejs"
   ],
   "author": "Vvkmnn",
   "license": "MIT",
@@ -63,7 +78,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.5.0",
+    "@modelcontextprotocol/sdk": "^1.27.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {

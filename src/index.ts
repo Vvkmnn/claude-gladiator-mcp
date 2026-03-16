@@ -13,9 +13,8 @@
  *   gladiator_reflect — Query, cluster, and get recommendations
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { createHash } from 'crypto';
 import { createRequire } from 'module';
 import {
@@ -446,74 +445,7 @@ function formatAge(ts: string): string {
 // MCP tool definitions
 // ---------------------------------------------------------------------------
 
-const observeToolDef = {
-  name: 'gladiator_observe',
-  description:
-    'Record a pattern worth learning from, with optional recommendation and artifact type. Deduplicates by summary hash.',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      summary: {
-        type: 'string',
-        description: '1-2 sentence description of what happened (min 20 chars)',
-      },
-      context: {
-        type: 'object',
-        description: 'Optional structured context',
-        properties: {
-          tool: { type: 'string', description: 'Tool that triggered this' },
-          before: { type: 'string', description: 'What was tried first' },
-          after: { type: 'string', description: 'What actually worked' },
-          error: { type: 'string', description: 'Exact error message if any' },
-        },
-      },
-      tags: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'Freeform tags for clustering',
-      },
-      recommendation: {
-        type: 'string',
-        description: 'What to do about this pattern (auto-generated if omitted)',
-      },
-      artifact_type: {
-        type: 'string',
-        enum: ['skill', 'rule', 'hook', 'agent'],
-        description: 'Suggested artifact type (auto-classified if omitted)',
-      },
-      source: {
-        type: 'string',
-        enum: ['manual', 'hook', 'conversation', 'session'],
-        description: 'Where this observation came from (default: manual)',
-      },
-      session_ref: {
-        type: 'string',
-        description:
-          'Session file reference when observing from conversation history (e.g., project-dir/session-id)',
-      },
-    },
-    required: ['summary'],
-  },
-};
-
-const reflectToolDef = {
-  name: 'gladiator_reflect',
-  description:
-    'Query and cluster observations. No args = stats overview. With query = filtered search. Unprocessed observations are clustered by tag overlap with recommendations.',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      query: {
-        type: 'string',
-        description: 'Keyword to filter observations by summary, tags, or recommendation',
-      },
-      limit: {
-        type: 'number',
-        description: 'Max observations to analyze (default 50)',
-      },
-    },
-  },
-};
+// Tool definitions moved to registerTool calls below
 
 // ---------------------------------------------------------------------------
 // Tool handlers
@@ -766,35 +698,80 @@ Do NOT observe: generic programming knowledge, trivial successes, transient erro
 IMPORTANT — Consolidation over creation:
 When reflecting, gladiator scans existing rules (~/.claude/rules/), hooks (~/.claude/hooks/), and skills (~/.claude/skills/) and recommends UPDATING existing artifacts when observations overlap with what's already there. Only recommend creating new artifacts when no existing one covers the topic. Generalize — a single rule update covering 5 observations is better than 5 new files.`;
 
-const server = new Server(
-  { name: 'claude-gladiator-mcp', version: SERVER_VERSION },
-  { capabilities: { tools: {} }, instructions: SERVER_INSTRUCTIONS },
+const server = new McpServer(
+  {
+    name: 'claude-gladiator-mcp',
+    version: SERVER_VERSION,
+    title: 'Claude Gladiator',
+    description: 'Continuous learning through pattern observation and reflection',
+  },
+  { instructions: SERVER_INSTRUCTIONS },
 );
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [observeToolDef, reflectToolDef],
-}));
-
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-
-  try {
-    let result: string;
-
-    if (name === 'gladiator_observe') {
-      result = handleObserve(ObserveInputSchema.parse(args));
-    } else if (name === 'gladiator_reflect') {
-      result = handleReflect(ReflectInputSchema.parse(args));
-    } else {
-      throw new Error(`Unknown tool: ${name}`);
+server.registerTool(
+  'gladiator_observe',
+  {
+    title: 'Observe Pattern',
+    description:
+      'Record a pattern worth learning from, with optional recommendation and artifact type. Deduplicates by summary hash.',
+    inputSchema: {
+      summary: ObserveInputSchema.shape.summary.describe(
+        '1-2 sentence description of what happened (min 20 chars)',
+      ),
+      context: ObserveInputSchema.shape.context.describe('Optional structured context'),
+      tags: ObserveInputSchema.shape.tags.describe('Freeform tags for clustering'),
+      recommendation: ObserveInputSchema.shape.recommendation.describe(
+        'What to do about this pattern (auto-generated if omitted)',
+      ),
+      artifact_type: ObserveInputSchema.shape.artifact_type.describe(
+        'Suggested artifact type (auto-classified if omitted)',
+      ),
+      source: ObserveInputSchema.shape.source.describe(
+        'Where this observation came from (default: manual)',
+      ),
+      session_ref: ObserveInputSchema.shape.session_ref.describe(
+        'Session file reference when observing from conversation history',
+      ),
+    },
+    annotations: { idempotentHint: true },
+  },
+  async (args) => {
+    try {
+      const input = ObserveInputSchema.parse(args);
+      const result = handleObserve(input);
+      return { content: [{ type: 'text', text: result }] };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return { content: [{ type: 'text', text: `Error: ${msg}` }], isError: true };
     }
+  },
+);
 
-    return { content: [{ type: 'text', text: result }] };
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    return { content: [{ type: 'text', text: `Error: ${msg}` }], isError: true };
-  }
-});
+server.registerTool(
+  'gladiator_reflect',
+  {
+    title: 'Reflect on Patterns',
+    description:
+      'Query and cluster observations. No args = stats overview. With query = filtered search. Unprocessed observations are clustered by tag overlap with recommendations.',
+    inputSchema: {
+      query: ReflectInputSchema.shape.query.describe(
+        'Keyword to filter observations by summary, tags, or recommendation',
+      ),
+      limit: ReflectInputSchema.shape.limit.describe('Max observations to analyze (default 50)'),
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+  },
+  async (args) => {
+    try {
+      const input = ReflectInputSchema.parse(args);
+      const result = handleReflect(input);
+      return { content: [{ type: 'text', text: result }] };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return { content: [{ type: 'text', text: `Error: ${msg}` }], isError: true };
+    }
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Entry point
